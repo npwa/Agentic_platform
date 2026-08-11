@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Run the planner -> executor -> validator agent graph on the demo task
-and print the resulting state trace.
+"""Run the planner -> executor -> validator -> human_approval -> write_report
+agent graph on the demo task, pausing on the interrupt for a CLI y/n
+confirmation before anything is written to disk.
 
 Usage:
     python -m agent.run
 """
+
+import uuid
+
+from langgraph.types import Command
 
 from agent.graph import build_graph
 
@@ -15,8 +20,20 @@ TASK = (
 )
 
 
+def print_trace(state: dict) -> None:
+    print("=== plan ===")
+    print(state["plan"])
+    print("\n=== facts ===")
+    print(state["facts"])
+    print("\n=== validation ===")
+    print(state["validation"], f"(retries used: {state['retries']})")
+    print("\n=== draft ===")
+    print(state["draft"])
+
+
 def main() -> None:
     app = build_graph()
+    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
     initial_state = {
         "task": TASK,
         "plan": "",
@@ -26,20 +43,21 @@ def main() -> None:
         "validation": {},
         "retries": 0,
         "status": "in_progress",
+        "approved": None,
+        "report_path": None,
     }
 
-    final_state = app.invoke(initial_state)
+    result = app.invoke(initial_state, config=config)
 
-    print("=== plan ===")
-    print(final_state["plan"])
-    print("\n=== facts ===")
-    print(final_state["facts"])
-    print("\n=== validation ===")
-    print(final_state["validation"], f"(retries used: {final_state['retries']})")
+    if "__interrupt__" in result:
+        print_trace(app.get_state(config).values)
+        answer = input("\nApprove this draft for writing to disk? [y/N] ").strip().lower()
+        result = app.invoke(Command(resume=answer == "y"), config=config)
+
     print("\n=== status ===")
-    print(final_state["status"])
-    print("\n=== draft ===")
-    print(final_state["draft"])
+    print(result["status"])
+    if result.get("report_path"):
+        print(f"Report written to {result['report_path']}")
 
 
 if __name__ == "__main__":

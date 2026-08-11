@@ -1,6 +1,8 @@
 """The agent graph: planner -> executor -> validator, with a retry edge back
 to the executor on a failed validation and a rollback edge once retries are
-exhausted.
+exhausted. Once a draft is validated, a human_approval interrupt node pauses
+the graph before the one "write" action (saving a report to disk) — the
+autonomy boundary called for in the README's step 4.
 
 State is explicit (a TypedDict) and every field is inspectable after a run,
 which is the point of building this on LangGraph instead of a bare LLM
@@ -8,16 +10,21 @@ call: the control flow (who ran, in what order, with what facts) is the
 artifact, not just the final text.
 """
 
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Literal, TypedDict
 
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, StateGraph
+from langgraph.types import interrupt
 
 from agent.tools import get_peak_power_unit, get_unit_material, retrieve_context
 
 MODEL = "qwen2.5:7b-instruct-q4_K_M"
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
 MAX_RETRIES = 2
+REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 
 
 class AgentState(TypedDict):
@@ -29,6 +36,8 @@ class AgentState(TypedDict):
     validation: dict
     retries: int
     status: str
+    approved: bool | None
+    report_path: str | None
 
 
 def _llm(temperature: float = 0.2) -> ChatOpenAI:
@@ -120,7 +129,38 @@ def rollback(state: AgentState) -> dict:
 
 
 def approve(state: AgentState) -> dict:
-    return {"status": "approved"}
+    return {"status": "validated"}
+
+
+def human_approval(state: AgentState) -> dict:
+    """Interrupt the graph and wait for a human to approve or reject the
+    validated draft before the write_report node runs. Resume with
+    Command(resume=True) to approve or Command(resume=False) to reject."""
+    decision = interrupt(
+        {
+            "question": "Approve this draft for writing to disk?",
+            "draft": state["draft"],
+            "facts": state["facts"],
+        }
+    )
+    return {"approved": bool(decision)}
+
+
+def route_after_approval(state: AgentState) -> Literal["write_report", "rejected"]:
+    return "write_report" if state["approved"] else "rejected"
+
+
+def write_report(state: AgentState) -> dict:
+    """The one 'write' action in the graph: persist the approved draft."""
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    report_path = REPORTS_DIR / f"{state['facts']['unit']}_{timestamp}.md"
+    report_path.write_text(f"# Thermal risk summary: {state['facts']['unit']}\n\n{state['draft']}\n")
+    return {"status": "written", "report_path": str(report_path)}
+
+
+def rejected(state: AgentState) -> dict:
+    return {"status": "rejected", "report_path": None}
 
 
 def build_graph():
@@ -130,6 +170,9 @@ def build_graph():
     graph.add_node("validator", validator)
     graph.add_node("rollback", rollback)
     graph.add_node("approve", approve)
+    graph.add_node("human_approval", human_approval)
+    graph.add_node("write_report", write_report)
+    graph.add_node("rejected", rejected)
 
     graph.set_entry_point("planner")
     graph.add_edge("planner", "executor")
@@ -140,6 +183,13 @@ def build_graph():
         {"retry": "executor", "rollback": "rollback", "approved": "approve"},
     )
     graph.add_edge("rollback", END)
-    graph.add_edge("approve", END)
+    graph.add_edge("approve", "human_approval")
+    graph.add_conditional_edges(
+        "human_approval",
+        route_after_approval,
+        {"write_report": "write_report", "rejected": "rejected"},
+    )
+    graph.add_edge("write_report", END)
+    graph.add_edge("rejected", END)
 
-    return graph.compile()
+    return graph.compile(checkpointer=InMemorySaver())
