@@ -55,13 +55,13 @@ flowchart TD
    relationships (part → material → simulation run) is enough to demonstrate
    "knowledge-graph-backed" without standing up Neo4j.
 
-3. **Agent graph** — This is the centerpiece. I will use **LangGraph** (talks to Ollama
-   through its OpenAI-compatible endpoint) to build an explicit planner → executor →
-   validator graph with real state, branching, and a retry/rollback edge. This is what
-   separates "agent demo" from "agentic platform engineering". I'll keep the model small
-   (8B) and the *tasks* simple (e.g., "given this sim data, identify the layer with peak
-   stress and draft a summary") — the graph structure is what you're demonstrating, not
-   reasoning depth.
+3. **Agent graph** — The selected model is `qwen2.5:7b-instruct-q4_K_M` and I will use
+   **LangGraph** (talks to Ollama through its OpenAI-compatible endpoint) to build an
+   explicit planner → executor → validator graph with real state, branching, and a
+   retry/rollback edge. This is what separates "agent demo" from "agentic platform
+   engineering". I'll keep the model small (8B) and the *tasks* simple (e.g., "given this
+   sim data, identify the layer with peak stress and draft a summary") — the graph
+   structure is what you're demonstrating, not reasoning depth.
 
 4. **Human approval** — A LangGraph interrupt node that pauses before any "write" action
    (e.g., before the agent would file a report or modify data) and waits for a
@@ -83,5 +83,8 @@ config.
 ----
 
 ## Setup (coming soon)
+
+Python 3.12.3 was used to build the environment and execute the scripts.
+
 
 <i>...to be continued</i>

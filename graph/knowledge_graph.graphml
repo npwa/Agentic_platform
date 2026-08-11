@@ -1,0 +1,518 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d16" for="edge" attr.name="relation" attr.type="string" />
+  <key id="d15" for="node" attr.name="area" attr.type="double" />
+  <key id="d14" for="node" attr.name="bottom_y" attr.type="double" />
+  <key id="d13" for="node" attr.name="left_x" attr.type="double" />
+  <key id="d12" for="node" attr.name="height" attr.type="double" />
+  <key id="d11" for="node" attr.name="width" attr.type="double" />
+  <key id="d10" for="node" attr.name="label" attr.type="string" />
+  <key id="d9" for="node" attr.name="dynamic_viscosity" attr.type="double" />
+  <key id="d8" for="node" attr.name="volumetric_heat_capacity" attr.type="double" />
+  <key id="d7" for="node" attr.name="thermal_conductivity" attr.type="double" />
+  <key id="d6" for="node" attr.name="material_type" attr.type="string" />
+  <key id="d5" for="node" attr.name="n_samples" attr.type="long" />
+  <key id="d4" for="node" attr.name="package_config_file" attr.type="string" />
+  <key id="d3" for="node" attr.name="config_file" attr.type="string" />
+  <key id="d2" for="node" attr.name="n_units" attr.type="long" />
+  <key id="d1" for="node" attr.name="source_file" attr.type="string" />
+  <key id="d0" for="node" attr.name="kind" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="ev6">
+      <data key="d0">floorplan</data>
+      <data key="d1">ev6.flp</data>
+      <data key="d2">30</data>
+    </node>
+    <node id="ev6_run">
+      <data key="d0">simulation_run</data>
+      <data key="d3">example.config</data>
+      <data key="d4">package.config</data>
+    </node>
+    <node id="gcc.ptrace">
+      <data key="d0">power_trace</data>
+      <data key="d5">100</data>
+      <data key="d2">30</data>
+    </node>
+    <node id="silicon">
+      <data key="d0">material</data>
+      <data key="d6">solid</data>
+      <data key="d7">130.0</data>
+      <data key="d8">1630300.0</data>
+    </node>
+    <node id="water">
+      <data key="d0">material</data>
+      <data key="d6">fluid</data>
+      <data key="d7">0.6069</data>
+      <data key="d8">4172638.0</data>
+      <data key="d9">0.000889</data>
+    </node>
+    <node id="aluminum">
+      <data key="d0">material</data>
+      <data key="d6">solid</data>
+      <data key="d7">237.0</data>
+      <data key="d8">2422000.0</data>
+    </node>
+    <node id="ev6::L2_left">
+      <data key="d0">part</data>
+      <data key="d10">L2_left</data>
+      <data key="d11">0.0049</data>
+      <data key="d12">0.0062</data>
+      <data key="d13">0.0</data>
+      <data key="d14">0.0098</data>
+      <data key="d15">3.0379999999999997e-05</data>
+    </node>
+    <node id="ev6::L2">
+      <data key="d0">part</data>
+      <data key="d10">L2</data>
+      <data key="d11">0.016</data>
+      <data key="d12">0.0098</data>
+      <data key="d13">0.0</data>
+      <data key="d14">0.0</data>
+      <data key="d15">0.0001568</data>
+    </node>
+    <node id="ev6::L2_right">
+      <data key="d0">part</data>
+      <data key="d10">L2_right</data>
+      <data key="d11">0.0049</data>
+      <data key="d12">0.0062</data>
+      <data key="d13">0.0111</data>
+      <data key="d14">0.0098</data>
+      <data key="d15">3.0379999999999997e-05</data>
+    </node>
+    <node id="ev6::Icache">
+      <data key="d0">part</data>
+      <data key="d10">Icache</data>
+      <data key="d11">0.0031</data>
+      <data key="d12">0.0026</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.0098</data>
+      <data key="d15">8.059999999999999e-06</data>
+    </node>
+    <node id="ev6::Dcache">
+      <data key="d0">part</data>
+      <data key="d10">Dcache</data>
+      <data key="d11">0.0031</data>
+      <data key="d12">0.0026</data>
+      <data key="d13">0.008</data>
+      <data key="d14">0.0098</data>
+      <data key="d15">8.059999999999999e-06</data>
+    </node>
+    <node id="ev6::Bpred_0">
+      <data key="d0">part</data>
+      <data key="d10">Bpred_0</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::Bpred_1">
+      <data key="d0">part</data>
+      <data key="d10">Bpred_1</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.005933</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::Bpred_2">
+      <data key="d0">part</data>
+      <data key="d10">Bpred_2</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.006967</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::DTB_0">
+      <data key="d0">part</data>
+      <data key="d10">DTB_0</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.008</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::DTB_1">
+      <data key="d0">part</data>
+      <data key="d10">DTB_1</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.009033</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::DTB_2">
+      <data key="d0">part</data>
+      <data key="d10">DTB_2</data>
+      <data key="d11">0.001033</data>
+      <data key="d12">0.0007</data>
+      <data key="d13">0.010067</data>
+      <data key="d14">0.0124</data>
+      <data key="d15">7.231e-07</data>
+    </node>
+    <node id="ev6::FPAdd_0">
+      <data key="d0">part</data>
+      <data key="d10">FPAdd_0</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.0009</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">9.9e-07</data>
+    </node>
+    <node id="ev6::FPAdd_1">
+      <data key="d0">part</data>
+      <data key="d10">FPAdd_1</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.0009</data>
+      <data key="d13">0.006</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">9.9e-07</data>
+    </node>
+    <node id="ev6::FPReg_0">
+      <data key="d0">part</data>
+      <data key="d10">FPReg_0</data>
+      <data key="d11">0.00055</data>
+      <data key="d12">0.00038</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.014</data>
+      <data key="d15">2.0900000000000003e-07</data>
+    </node>
+    <node id="ev6::FPReg_1">
+      <data key="d0">part</data>
+      <data key="d10">FPReg_1</data>
+      <data key="d11">0.00055</data>
+      <data key="d12">0.00038</data>
+      <data key="d13">0.00545</data>
+      <data key="d14">0.014</data>
+      <data key="d15">2.0900000000000003e-07</data>
+    </node>
+    <node id="ev6::FPReg_2">
+      <data key="d0">part</data>
+      <data key="d10">FPReg_2</data>
+      <data key="d11">0.00055</data>
+      <data key="d12">0.00038</data>
+      <data key="d13">0.006</data>
+      <data key="d14">0.014</data>
+      <data key="d15">2.0900000000000003e-07</data>
+    </node>
+    <node id="ev6::FPReg_3">
+      <data key="d0">part</data>
+      <data key="d10">FPReg_3</data>
+      <data key="d11">0.00055</data>
+      <data key="d12">0.00038</data>
+      <data key="d13">0.00655</data>
+      <data key="d14">0.014</data>
+      <data key="d15">2.0900000000000003e-07</data>
+    </node>
+    <node id="ev6::FPMul_0">
+      <data key="d0">part</data>
+      <data key="d10">FPMul_0</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.00095</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.01438</data>
+      <data key="d15">1.0450000000000002e-06</data>
+    </node>
+    <node id="ev6::FPMul_1">
+      <data key="d0">part</data>
+      <data key="d10">FPMul_1</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.00095</data>
+      <data key="d13">0.006</data>
+      <data key="d14">0.01438</data>
+      <data key="d15">1.0450000000000002e-06</data>
+    </node>
+    <node id="ev6::FPMap_0">
+      <data key="d0">part</data>
+      <data key="d10">FPMap_0</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.00067</data>
+      <data key="d13">0.0049</data>
+      <data key="d14">0.01533</data>
+      <data key="d15">7.370000000000001e-07</data>
+    </node>
+    <node id="ev6::FPMap_1">
+      <data key="d0">part</data>
+      <data key="d10">FPMap_1</data>
+      <data key="d11">0.0011</data>
+      <data key="d12">0.00067</data>
+      <data key="d13">0.006</data>
+      <data key="d14">0.01533</data>
+      <data key="d15">7.370000000000001e-07</data>
+    </node>
+    <node id="ev6::IntMap">
+      <data key="d0">part</data>
+      <data key="d10">IntMap</data>
+      <data key="d11">0.0009</data>
+      <data key="d12">0.00135</data>
+      <data key="d13">0.0071</data>
+      <data key="d14">0.01465</data>
+      <data key="d15">1.215e-06</data>
+    </node>
+    <node id="ev6::IntQ">
+      <data key="d0">part</data>
+      <data key="d10">IntQ</data>
+      <data key="d11">0.0013</data>
+      <data key="d12">0.00135</data>
+      <data key="d13">0.008</data>
+      <data key="d14">0.01465</data>
+      <data key="d15">1.755e-06</data>
+    </node>
+    <node id="ev6::IntReg_0">
+      <data key="d0">part</data>
+      <data key="d10">IntReg_0</data>
+      <data key="d11">0.0009</data>
+      <data key="d12">0.00067</data>
+      <data key="d13">0.0093</data>
+      <data key="d14">0.01533</data>
+      <data key="d15">6.03e-07</data>
+    </node>
+    <node id="ev6::IntReg_1">
+      <data key="d0">part</data>
+      <data key="d10">IntReg_1</data>
+      <data key="d11">0.0009</data>
+      <data key="d12">0.00067</data>
+      <data key="d13">0.0102</data>
+      <data key="d14">0.01533</data>
+      <data key="d15">6.03e-07</data>
+    </node>
+    <node id="ev6::IntExec">
+      <data key="d0">part</data>
+      <data key="d10">IntExec</data>
+      <data key="d11">0.0018</data>
+      <data key="d12">0.00223</data>
+      <data key="d13">0.0093</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">4.014e-06</data>
+    </node>
+    <node id="ev6::FPQ">
+      <data key="d0">part</data>
+      <data key="d10">FPQ</data>
+      <data key="d11">0.0009</data>
+      <data key="d12">0.00155</data>
+      <data key="d13">0.0071</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">1.395e-06</data>
+    </node>
+    <node id="ev6::LdStQ">
+      <data key="d0">part</data>
+      <data key="d10">LdStQ</data>
+      <data key="d11">0.0013</data>
+      <data key="d12">0.00095</data>
+      <data key="d13">0.008</data>
+      <data key="d14">0.0137</data>
+      <data key="d15">1.235e-06</data>
+    </node>
+    <node id="ev6::ITB_0">
+      <data key="d0">part</data>
+      <data key="d10">ITB_0</data>
+      <data key="d11">0.00065</data>
+      <data key="d12">0.0006</data>
+      <data key="d13">0.008</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">3.8999999999999997e-07</data>
+    </node>
+    <node id="ev6::ITB_1">
+      <data key="d0">part</data>
+      <data key="d10">ITB_1</data>
+      <data key="d11">0.00065</data>
+      <data key="d12">0.0006</data>
+      <data key="d13">0.00865</data>
+      <data key="d14">0.0131</data>
+      <data key="d15">3.8999999999999997e-07</data>
+    </node>
+    <edge source="ev6" target="ev6_run">
+      <data key="d16">used_in</data>
+    </edge>
+    <edge source="gcc.ptrace" target="ev6_run">
+      <data key="d16">input_to</data>
+    </edge>
+    <edge source="silicon" target="ev6_run">
+      <data key="d16">used_in</data>
+    </edge>
+    <edge source="aluminum" target="ev6_run">
+      <data key="d16">used_in</data>
+    </edge>
+    <edge source="ev6::L2_left" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::L2_left" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::L2" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::L2" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::L2_right" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::L2_right" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::Icache" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::Icache" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::Dcache" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::Dcache" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::Bpred_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::Bpred_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::Bpred_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::Bpred_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::Bpred_2" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::Bpred_2" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::DTB_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::DTB_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::DTB_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::DTB_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::DTB_2" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::DTB_2" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPAdd_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPAdd_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPAdd_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPAdd_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPReg_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPReg_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPReg_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPReg_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPReg_2" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPReg_2" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPReg_3" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPReg_3" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPMul_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPMul_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPMul_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPMul_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPMap_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPMap_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPMap_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPMap_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::IntMap" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::IntMap" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::IntQ" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::IntQ" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::IntReg_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::IntReg_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::IntReg_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::IntReg_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::IntExec" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::IntExec" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::FPQ" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::FPQ" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::LdStQ" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::LdStQ" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::ITB_0" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::ITB_0" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+    <edge source="ev6::ITB_1" target="ev6">
+      <data key="d16">part_of</data>
+    </edge>
+    <edge source="ev6::ITB_1" target="silicon">
+      <data key="d16">made_of</data>
+    </edge>
+  </graph>
+</graphml>

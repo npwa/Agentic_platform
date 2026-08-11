@@ -6,6 +6,5 @@ data/J-STD-033D.PDF
 
 # Local vector store / graph artifacts produced by ingestion
 chroma_db/
-graph/
 __pycache__/
 *.pyc
