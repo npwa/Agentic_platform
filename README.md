@@ -13,16 +13,10 @@ Agentic platform <i>proof of concept</i> - **WORK IN PROGRESS**.
 | GPU  | NVIDIA GeForce RTX 3080, 10GB VRAM
 | PCIe | 4.0 over a x16 lane width (16GT/s)
 
-
 The 10GB 3080 is a real constraint but it pushes toward the *engineering* of the platform
 (orchestration, observability, data plumbing) rather than trying to prove out model
-quality and chasing benchmark scores.
-
-**What the hardware supports:** with 10GB VRAM, quantized 7–8B models (Llama 3.1 8B,
-Qwen2.5 7B, Mistral 7B) run comfortably via Ollama at Q4/Q5. A 14B model could work with
-aggressive quantization.
-
-Here's the draft architecture:
+quality and chasing benchmark scores. With 10GB VRAM, quantized 7-8B models (Llama 3.1
+8B, Qwen2.5 7B, Mistral 7B) run comfortably via Ollama at Q4/Q5.
 
 ```mermaid
 flowchart TD
@@ -33,58 +27,96 @@ flowchart TD
     E -.config updates.-> C
 ```
 
-1. **Data sources, use public demo/test data**
-   Publicly accessible links that match the requirements for this POC:
-   - Semiconductor packaging datasheets
-     https://www.ti.com/lit/ds/sdls047/sdls047.pdf  
-     (Texas Instruments product datasheet containing package outline, mechanical
-     dimensions, and thermal characteristics)
-   - JEDEC specs
-     https://www.jedec.org/standards-documents/docs/j-std-033c  
-     (J-STD-033 – Joint IPC/JEDEC Standard for Handling, Packing, Shipping, and Use of
-     Moisture/Reflow Sensitive Surface-Mount Devices. Free download after registration)
-   - Synthetic thermo-mechanical / thermal simulation output
-     https://github.com/uvahotspot/HotSpot  
-     (Official HotSpot thermal simulator repository. The /examples directory contains
-     floorplans, power traces, configuration files, and generated steady-state / transient
-     thermal simulation outputs that you can use directly as synthetic data)
+## What's built
 
-2. **Semantic layer** — Chroma or Qdrant (both run fine locally, low VRAM footprint since
-   embeddings can run on CPU or a small embedding model like `nomic-embed-text` via
-   Ollama) for the vector side. A lightweight `networkx` graph for structured
-   relationships (part → material → simulation run) is enough to demonstrate
-   "knowledge-graph-backed" without standing up Neo4j.
+1. **Data sources** — Public demo/test data:
+   - Semiconductor packaging datasheets: [TI sdls047](https://www.ti.com/lit/ds/sdls047/sdls047.pdf)
+     (package outline, mechanical dimensions, thermal characteristics)
+   - JEDEC spec: [J-STD-033](https://www.jedec.org/standards-documents/docs/j-std-033c)
+     (Moisture/Reflow Sensitive Surface-Mount Devices, free after registration)
+   - Synthetic thermal simulation output: [HotSpot](https://github.com/uvahotspot/HotSpot)
+     `/examples` floorplans, power traces, and configs, used directly as synthetic data
 
-3. **Agent graph** — The selected model is `qwen2.5:7b-instruct-q4_K_M` and I will use
-   **LangGraph** (talks to Ollama through its OpenAI-compatible endpoint) to build an
-   explicit planner → executor → validator graph with real state, branching, and a
-   retry/rollback edge. This is what separates "agent demo" from "agentic platform
-   engineering". I'll keep the model small (8B) and the *tasks* simple (e.g., "given this
-   sim data, identify the layer with peak stress and draft a summary") — the graph
-   structure is what you're demonstrating, not reasoning depth.
+   The two licensed PDFs aren't redistributed in this repo — see `data/download_note.md`
+   for where to get them; they're referenced locally via symlink.
 
-4. **Human approval** — A LangGraph interrupt node that pauses before any "write" action
-   (e.g., before the agent would file a report or modify data) and waits for a
-   CLI/Streamlit confirmation. Trivial to build, but it directly answers
-   "human-in-the-loop controls with clear autonomy boundaries" from the preferred
-   qualifications.
+2. **Semantic layer** — `scripts/ingest_pdfs.py` chunks the PDFs (`pdfplumber`), embeds
+   each chunk with `nomic-embed-text` via Ollama, and upserts into a persistent Chroma
+   collection (`chroma_db/`, gitignored — regenerate locally). `scripts/ingest_graph.py`
+   parses the HotSpot floorplan/materials/config/power-trace files into a `networkx`
+   part → material → simulation-run graph, committed as `graph/knowledge_graph.graphml`.
 
-5. **Observability & evals** — Self-host **Langfuse** (docker-compose, runs fine locally)
-   to capture traces, tool calls, latency, and token cost per run. Version your
-   prompts/tool configs as YAML in git, and wire a small GitHub Action that runs a handful
-   of eval cases on push (even a naive "did the validator pass" check counts as a
-   regression gate).
+3. **Agent graph** — A LangGraph `StateGraph` (`agent/graph.py`) running
+   `qwen2.5:7b-instruct-q4_K_M` through Ollama's OpenAI-compatible endpoint, with
+   explicit `TypedDict` state and real conditional routing: a failed validation retries
+   the executor (feeding back what failed) up to a configurable limit, then rolls back
+   to a terminal failed state. The validator is deterministic — it checks for the unit
+   name, material, and a cited source in the draft, not an LLM judgment call. Model
+   name, retry limit, retrieval parameters, and both prompt templates are externalized
+   in `agent/config.yaml` and loaded by `agent/config.py` — no hardcoded values in the
+   graph itself.
+   **Known limitation:** the planner produces a real LLM-written plan, but the executor
+   doesn't yet branch on its contents — it runs a fixed tool sequence regardless of what
+   the plan says. Making the executor parse and act on the plan is the next fix.
 
-**I'm on a limited time budget:** the model quality will be the weakest part of this demo
-no matter what — I won't over-invest in prompt tuning. Instead, I'll spend time on the
-graph's explicit state/control flow, the trace/eval dashboard, and the git-versioned
-config.
+4. **Human approval** — A LangGraph interrupt node pauses the graph after a validated
+   draft and waits for an explicit CLI y/n before the one write action (saving a report
+   to `reports/`, gitignored) can happen.
 
-----
+5. **Configuration & observability** — A self-hosted Langfuse stack
+   (`langfuse/docker-compose.yml`) captures every LLM call and tool invocation
+   (`@observe` on each tool in `agent/tools.py`, a shared `CallbackHandler` on both LLM
+   calls in `agent/graph.py`) as a single trace per run, flushed at the end of
+   `agent/run.py`. A GitHub Actions workflow (`.github/workflows/eval.yml`) runs a
+   deterministic pytest suite (`evals/test_regression.py`) on every push — peak-power
+   extraction, graph lookups, validator logic, all three routing branches, and report
+   writing, with no live model or external service required.
 
-## Setup (coming soon)
+**Time budget note:** model quality is the weakest link no matter what, given the
+hardware — time went into control flow, data plumbing, and config/observability
+structure instead of prompt tuning.
 
-Python 3.12.3 was used to build the environment and execute the scripts.
+## Setup
 
+Built and run on Python 3.12.3.
+
+```bash
+git clone https://github.com/npwa/Agentic_platform.git
+cd Agentic_platform
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# pull the local models
+ollama pull qwen2.5:7b-instruct-q4_K_M
+ollama pull nomic-embed-text
+
+# copy and fill in secrets (generate your own — don't reuse the examples)
+cp .env.example .env
+cp langfuse/.env.example langfuse/.env
+
+# bring up the self-hosted Langfuse stack
+cd langfuse && docker compose up -d && cd ..
+# the stack auto-provisions a project from langfuse/.env's LANGFUSE_INIT_* values;
+# make sure the PUBLIC/SECRET key pair in the root .env matches that project
+
+# get the licensed PDFs per data/download_note.md, then:
+python scripts/ingest_pdfs.py
+python scripts/ingest_graph.py
+
+# run the agent graph end to end (traces to Langfuse at http://localhost:3000)
+python -m agent.run
+
+# run the regression suite locally (also runs in CI on every push)
+pytest evals/ -v
+```
+
+## Roadmap
+
+- Executor branches on the planner's actual plan, instead of a fixed tool sequence
+- Multi-agent coordination
+- Production CI/CD for agent configs beyond the current regression gate (prompt/version
+  rollout, not just correctness checks)
+- Enterprise integration patterns (RBAC/ABAC)
 
 <i>...to be continued</i>
