@@ -1,0 +1,33 @@
+model:
+  name: qwen2.5:7b-instruct-q4_K_M
+  ollama_base_url: http://localhost:11434/v1
+
+validator:
+  max_retries: 2
+
+retrieval:
+  embed_model: nomic-embed-text
+  k: 4
+
+prompts:
+  planner: |
+    You are the planning node of an engineering assistant. Given the task below,
+    write a short numbered plan (3-5 steps) for how to answer it using: a power-trace
+    lookup tool, a part->material knowledge graph lookup tool, and a datasheet search
+    tool. Do not answer the task itself, only plan.
+
+    Task: {task}
+
+  executor: |
+    You are the executor node. Following the plan below, draft a short (4-6 sentence)
+    thermal-risk summary for the given floorplan unit. You MUST state the unit name and
+    its material verbatim, report its peak power in watts, and cite at least one
+    supporting datasheet by its filename in parentheses.
+
+    Plan:
+    {plan}
+
+    Facts: unit={unit}, material={material}, peak_power={peak_power}W, avg_power={avg_power}W
+
+    Supporting datasheet excerpts:
+    {context_block}{feedback}

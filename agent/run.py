@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run the planner -> executor -> validator -> human_approval -> write_report
 agent graph on the demo task, pausing on the interrupt for a CLI y/n
-confirmation before anything is written to disk.
+confirmation before anything is written to disk. The whole run is captured
+as one Langfuse trace (see README.md step 5).
 
 Usage:
     python -m agent.run
@@ -9,6 +10,7 @@ Usage:
 
 import uuid
 
+from langfuse import get_client, observe
 from langgraph.types import Command
 
 from agent.graph import build_graph
@@ -31,7 +33,8 @@ def print_trace(state: dict) -> None:
     print(state["draft"])
 
 
-def main() -> None:
+@observe(name="agentic_platform_run")
+def run_once() -> dict:
     app = build_graph()
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
     initial_state = {
@@ -54,10 +57,18 @@ def main() -> None:
         answer = input("\nApprove this draft for writing to disk? [y/N] ").strip().lower()
         result = app.invoke(Command(resume=answer == "y"), config=config)
 
+    return result
+
+
+def main() -> None:
+    result = run_once()
+
     print("\n=== status ===")
     print(result["status"])
     if result.get("report_path"):
         print(f"Report written to {result['report_path']}")
+
+    get_client().flush()
 
 
 if __name__ == "__main__":

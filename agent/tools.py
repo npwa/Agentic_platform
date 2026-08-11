@@ -12,14 +12,17 @@ from pathlib import Path
 import chromadb
 import networkx as nx
 import ollama
+from langfuse import observe
+
+from agent.config import EMBED_MODEL, RETRIEVAL_K
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOTSPOT_DIR = REPO_ROOT / "data" / "hotspot_example1"
 GRAPH_PATH = REPO_ROOT / "graph" / "knowledge_graph.graphml"
 CHROMA_DIR = REPO_ROOT / "chroma_db"
-EMBED_MODEL = "nomic-embed-text"
 
 
+@observe(name="tool.get_peak_power_unit", as_type="tool")
 def get_peak_power_unit(ptrace_path: Path = HOTSPOT_DIR / "gcc.ptrace") -> dict:
     """Return the floorplan unit with the highest peak power draw across
     the trace, plus its peak and average power (in watts)."""
@@ -37,6 +40,7 @@ def get_peak_power_unit(ptrace_path: Path = HOTSPOT_DIR / "gcc.ptrace") -> dict:
     return {"unit": peak_unit, "peak_power": peak_value, "avg_power": peak_avg, "n_samples": len(rows)}
 
 
+@observe(name="tool.get_unit_material", as_type="tool")
 def get_unit_material(unit: str, floorplan_id: str = "ev6", graph_path: Path = GRAPH_PATH) -> str | None:
     """Look up what material a floorplan unit is made of via the
     part -> material knowledge graph built by scripts/ingest_graph.py."""
@@ -50,7 +54,8 @@ def get_unit_material(unit: str, floorplan_id: str = "ev6", graph_path: Path = G
     return None
 
 
-def retrieve_context(query: str, k: int = 4, collection: str = "datasheets") -> list[dict]:
+@observe(name="tool.retrieve_context", as_type="retriever")
+def retrieve_context(query: str, k: int = RETRIEVAL_K, collection: str = "datasheets") -> list[dict]:
     """Semantic search over the ingested PDF datasheets/specs."""
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
     col = client.get_collection(collection)

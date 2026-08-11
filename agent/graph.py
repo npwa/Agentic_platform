@@ -19,11 +19,10 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, StateGraph
 from langgraph.types import interrupt
 
+from agent.config import MAX_RETRIES, MODEL, OLLAMA_BASE_URL, PROMPTS
 from agent.tools import get_peak_power_unit, get_unit_material, retrieve_context
+from agent.tracing import langfuse_handler
 
-MODEL = "qwen2.5:7b-instruct-q4_K_M"
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
-MAX_RETRIES = 2
 REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 
 
@@ -45,13 +44,8 @@ def _llm(temperature: float = 0.2) -> ChatOpenAI:
 
 
 def planner(state: AgentState) -> dict:
-    prompt = (
-        "You are the planning node of an engineering assistant. Given the task below, "
-        "write a short numbered plan (3-5 steps) for how to answer it using: a power-trace "
-        "lookup tool, a part->material knowledge graph lookup tool, and a datasheet search "
-        "tool. Do not answer the task itself, only plan.\n\nTask: " + state["task"]
-    )
-    response = _llm(temperature=0.0).invoke(prompt)
+    prompt = PROMPTS["planner"].format(task=state["task"])
+    response = _llm(temperature=0.0).invoke(prompt, config={"callbacks": [langfuse_handler]})
     return {"plan": response.content}
 
 
@@ -75,18 +69,16 @@ def executor(state: AgentState) -> dict:
         )
 
     context_block = "\n".join(f"- ({c['source']} p.{c['page']}) {c['text'][:300]}" for c in context)
-    prompt = (
-        "You are the executor node. Following the plan below, draft a short (4-6 sentence) "
-        "thermal-risk summary for the given floorplan unit. You MUST state the unit name and "
-        "its material verbatim, report its peak power in watts, and cite at least one "
-        "supporting datasheet by its filename in parentheses.\n\n"
-        f"Plan:\n{state['plan']}\n\n"
-        f"Facts: unit={facts['unit']}, material={facts['material']}, "
-        f"peak_power={facts['peak_power']:.2f}W, avg_power={facts['avg_power']:.2f}W\n\n"
-        f"Supporting datasheet excerpts:\n{context_block}"
-        f"{feedback}"
+    prompt = PROMPTS["executor"].format(
+        plan=state["plan"],
+        unit=facts["unit"],
+        material=facts["material"],
+        peak_power=f"{facts['peak_power']:.2f}",
+        avg_power=f"{facts['avg_power']:.2f}",
+        context_block=context_block,
+        feedback=feedback,
     )
-    response = _llm(temperature=0.2).invoke(prompt)
+    response = _llm(temperature=0.2).invoke(prompt, config={"callbacks": [langfuse_handler]})
     return {"facts": facts, "context": context, "draft": response.content}
 
 
