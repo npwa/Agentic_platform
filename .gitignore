@@ -1,9 +1,5 @@
 .venv/
 
-# PDFs symlinked in from the sibling (non-public) Agentic_platform_data dir
-data/sdls047.pdf
-data/J-STD-033D.PDF
-
 # Local vector store / graph artifacts produced by ingestion
 chroma_db/
 __pycache__/
