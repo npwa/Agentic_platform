@@ -10,6 +10,7 @@ call: the control flow (who ran, in what order, with what facts) is the
 artifact, not just the final text.
 """
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -24,6 +25,9 @@ from agent.tools import get_peak_power_unit, get_unit_material, retrieve_context
 from agent.tracing import langfuse_handler
 
 REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
+
+# Matches a double-quoted span of 5-200 chars, e.g. "exact phrase" (file.pdf p.3)
+_QUOTE_PATTERN = re.compile(r'"([^"]{5,200})"')
 
 
 class AgentState(TypedDict):
@@ -83,16 +87,40 @@ def executor(state: AgentState) -> dict:
 
 
 def validator(state: AgentState) -> dict:
-    draft = state["draft"].lower()
+    draft = state["draft"]
+    draft_lower = draft.lower()
     facts = state["facts"]
     issues = []
 
-    if facts["unit"].lower() not in draft:
+    if facts["unit"].lower() not in draft_lower:
         issues.append(f"draft does not mention the unit name '{facts['unit']}'")
-    if facts["material"].lower() not in draft:
+    if facts["material"].lower() not in draft_lower:
         issues.append(f"draft does not mention the material '{facts['material']}'")
-    if not any(c["source"].lower() in draft for c in state["context"]):
+    if not any(c["source"].lower() in draft_lower for c in state["context"]):
         issues.append("draft does not cite any of the retrieved datasheet sources by filename")
+
+    # Grounding check: any claim quoted in double quotes must be a real
+    # substring of the retrieved context, not a paraphrase or invention.
+    # This catches the case where the citation (filename, page) is correct
+    # but the model has rewritten/embellished what the source actually says.
+    quotes = _QUOTE_PATTERN.findall(draft)
+    context_text = " ".join(c["text"] for c in state["context"]).lower()
+    if not quotes:
+        issues.append(
+            "draft contains no verbatim quote (in double quotes) grounding a claim "
+            "in the retrieved datasheet text"
+        )
+    else:
+        # Normalize whitespace so line-wrapping in the source PDF text doesn't
+        # cause a false mismatch on an otherwise-exact quote.
+        normalized_context = re.sub(r"\s+", " ", context_text)
+        for quote in quotes:
+            normalized_quote = re.sub(r"\s+", " ", quote.lower()).strip()
+            if normalized_quote not in normalized_context:
+                issues.append(
+                    f"quoted text \"{quote}\" does not appear verbatim in the retrieved "
+                    "context — possible fabricated or paraphrased claim"
+                )
 
     passed = not issues
     retries = state.get("retries", 0)

@@ -24,6 +24,14 @@ prompts:
     its material verbatim, report its peak power in watts, and cite at least one
     supporting datasheet by its filename in parentheses.
 
+    For at least one factual claim drawn from the datasheet excerpts, include a short
+    verbatim quote (5-15 words, copied EXACTLY as written in the excerpt, no
+    paraphrasing) in double quotes, immediately followed by its citation, e.g.:
+    "exact phrase copied from the excerpt" (filename.pdf p.N)
+    Do not attribute a claim to the datasheet unless you are quoting it directly this
+    way. If the excerpts don't support a specific claim you want to make, leave that
+    claim out rather than inferring or generalizing beyond what the text says.
+
     Plan:
     {plan}
 

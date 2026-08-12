@@ -45,24 +45,33 @@ def test_knowledge_graph_has_part_material_run_chain():
     assert any(data["relation"] == "used_in" for _, _, data in graph.out_edges("silicon", data=True))
 
 
-def _state(draft, unit="Dcache", material="silicon", sources=("J-STD-033D.PDF",), retries=0):
+# A short passage standing in for real retrieved datasheet text -- long
+# enough to exercise the quote-grounding check without needing a real PDF.
+_SAMPLE_CONTEXT_TEXT = (
+    "The device must be handled according to moisture sensitivity level "
+    "requirements before the reflow soldering process begins."
+)
+_VERBATIM_QUOTE = "moisture sensitivity level requirements before the reflow soldering"
+
+
+def _state(draft, unit="Dcache", material="silicon", sources=("J-STD-033D.PDF",), retries=0, context_text=_SAMPLE_CONTEXT_TEXT):
     return {
         "draft": draft,
         "facts": {"unit": unit, "material": material, "peak_power": 14.3, "avg_power": 10.3},
-        "context": [{"source": s, "page": 1, "text": "..."} for s in sources],
+        "context": [{"source": s, "page": 1, "text": context_text} for s in sources],
         "retries": retries,
     }
 
 
 def test_validator_passes_a_grounded_draft():
-    state = _state("The Dcache unit, made of silicon, per (J-STD-033D.PDF).")
+    state = _state(f'The Dcache unit, made of silicon, states "{_VERBATIM_QUOTE}" per (J-STD-033D.PDF).')
     result = validator(state)
     assert result["validation"] == {"passed": True, "issues": []}
     assert result["retries"] == 0
 
 
 def test_validator_flags_missing_unit_name():
-    state = _state("This silicon component cites (J-STD-033D.PDF) but never names itself.")
+    state = _state(f'This silicon component states "{_VERBATIM_QUOTE}" (J-STD-033D.PDF) but never names itself.')
     result = validator(state)
     assert result["validation"]["passed"] is False
     assert any("unit name" in issue for issue in result["validation"]["issues"])
@@ -70,17 +79,53 @@ def test_validator_flags_missing_unit_name():
 
 
 def test_validator_flags_missing_material():
-    state = _state("The Dcache unit draws power, per (J-STD-033D.PDF).")
+    state = _state(f'The Dcache unit states "{_VERBATIM_QUOTE}" per (J-STD-033D.PDF).')
     result = validator(state)
     assert result["validation"]["passed"] is False
     assert any("material" in issue for issue in result["validation"]["issues"])
 
 
 def test_validator_flags_missing_citation():
-    state = _state("The Dcache unit is made of silicon.")
+    state = _state(f'The Dcache unit is made of silicon and states "{_VERBATIM_QUOTE}".')
     result = validator(state)
     assert result["validation"]["passed"] is False
     assert any("cite" in issue for issue in result["validation"]["issues"])
+
+
+def test_validator_flags_missing_quote():
+    """Unit, material, and citation are all present, but no claim is
+    grounded with a verbatim quote from the retrieved context."""
+    state = _state("The Dcache unit, made of silicon, has thermal risks per (J-STD-033D.PDF).")
+    result = validator(state)
+    assert result["validation"]["passed"] is False
+    assert any("no verbatim quote" in issue for issue in result["validation"]["issues"])
+    assert result["retries"] == 1
+
+
+def test_validator_flags_unverifiable_quote():
+    """A quote is present and looks like a citation, but the quoted text
+    was never actually retrieved -- the case that motivated this check:
+    correct filename/page, fabricated or paraphrased content."""
+    state = _state(
+        'The Dcache unit, made of silicon, states "this exact phrase was never '
+        'in any retrieved excerpt" per (J-STD-033D.PDF).'
+    )
+    result = validator(state)
+    assert result["validation"]["passed"] is False
+    assert any("does not appear verbatim" in issue for issue in result["validation"]["issues"])
+
+
+def test_validator_quote_match_ignores_whitespace_differences():
+    """A quote that's verbatim but re-wrapped across lines (as PDF-extracted
+    text often is) should still pass -- whitespace shouldn't cause a false
+    rejection of a genuinely accurate quote."""
+    wrapped_context = "moisture sensitivity level\nrequirements   before the\nreflow soldering"
+    state = _state(
+        f'The Dcache unit, made of silicon, states "{_VERBATIM_QUOTE}" per (J-STD-033D.PDF).',
+        context_text=wrapped_context,
+    )
+    result = validator(state)
+    assert result["validation"] == {"passed": True, "issues": []}
 
 
 def test_route_after_validation_branches():
