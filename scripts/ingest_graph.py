@@ -16,7 +16,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from agent.graph_db import get_driver  # noqa: E402
+from agent.graph_db import run_query  # noqa: E402
 
 
 def parse_floorplan(path: Path) -> list[dict]:
@@ -161,20 +161,18 @@ def build_graph(example_dir: Path) -> dict:
 
 
 def write_to_neo4j(elements: dict) -> None:
-    driver = get_driver()
-    with driver.session() as session:
-        for label, node_id, props in elements["nodes"]:
-            session.run(f"MERGE (n:{label} {{id: $id}}) SET n += $props", id=node_id, props=props)
-        for from_label, from_id, rel_type, to_label, to_id in elements["edges"]:
-            session.run(
-                f"""
-                MATCH (a:{from_label} {{id: $from_id}})
-                MATCH (b:{to_label} {{id: $to_id}})
-                MERGE (a)-[:{rel_type}]->(b)
-                """,
-                from_id=from_id,
-                to_id=to_id,
-            )
+    for label, node_id, props in elements["nodes"]:
+        run_query(f"MERGE (n:{label} {{id: $id}}) SET n += $props", id=node_id, props=props)
+    for from_label, from_id, rel_type, to_label, to_id in elements["edges"]:
+        run_query(
+            f"""
+            MATCH (a:{from_label} {{id: $from_id}})
+            MATCH (b:{to_label} {{id: $to_id}})
+            MERGE (a)-[:{rel_type}]->(b)
+            """,
+            from_id=from_id,
+            to_id=to_id,
+        )
 
 
 def main() -> None:

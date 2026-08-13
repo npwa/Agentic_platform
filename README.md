@@ -45,10 +45,12 @@ flowchart TD
    collection (`chroma_db/`, gitignored — regenerate locally). `scripts/ingest_graph.py`
    parses the HotSpot floorplan/materials/config/power-trace files into a part → material
    → simulation-run graph and writes it to a **Neo4j Aura Free** instance via `MERGE`
-   (idempotent full rebuild on every run, no local graph file). `agent/graph_db.py` holds
-   the one shared driver, credentialed from `.env`'s `NEO4J_URI`/`NEO4J_USER`/
-   `NEO4J_PASSWORD` — the Aura instance itself isn't provisioned by anything in this repo;
-   see Setup below.
+   (idempotent full rebuild on every run, no local graph file). `agent/graph_db.py`
+   centralizes access, credentialed from `.env`'s `NEO4J_URI`/`NEO4J_USER`/
+   `NEO4J_PASSWORD`/`NEO4J_DATABASE` — the Aura instance itself isn't provisioned by
+   anything in this repo; see Setup below. It talks to Aura's **HTTPS Query API**
+   (`/db/<database>/query/v2`) rather than the Bolt driver: Bolt is raw TCP on port 7687,
+   which doesn't traverse an HTTP(S)-only corporate proxy, while Cypher-over-HTTPS does.
 
 3. **Agent graph** — A LangGraph `StateGraph` (`agent/graph.py`) running
    `qwen2.5:7b-instruct-q4_K_M` through Ollama's OpenAI-compatible endpoint, with
@@ -108,6 +110,9 @@ cd langfuse && docker compose up -d && cd ..
 # unlike Langfuse this isn't self-hosted by anything here. Create a free
 # instance at https://console.neo4j.io, then put its connection details in
 # the root .env as NEO4J_URI (neo4j+s://...), NEO4J_USER, NEO4J_PASSWORD.
+# NEO4J_DATABASE defaults to "neo4j" -- but Aura Free instances often name
+# the database after the instance ID instead, same as NEO4J_USER; check the
+# console if queries 404 with "Database does not exist".
 
 # get the licensed PDFs per data/download_note.md, then:
 python scripts/ingest_pdfs.py

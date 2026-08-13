@@ -21,7 +21,7 @@ from agent.graph import (
     validator,
     write_report,
 )
-from agent.graph_db import get_driver
+from agent.graph_db import run_query
 from agent.tools import get_peak_power_unit, get_unit_material
 
 # get_unit_material() and the graph-chain test below query Neo4j live -- skip
@@ -46,16 +46,11 @@ def test_unit_material_lookup():
 
 @requires_neo4j
 def test_knowledge_graph_has_part_material_run_chain():
-    with get_driver().session() as session:
-        made_of = session.run(
-            "MATCH (:Part {id: 'ev6::Dcache'})-[:MADE_OF]->(m:Material) RETURN m.id AS material"
-        ).single()
-        assert made_of is not None and made_of["material"] == "silicon"
+    made_of = run_query("MATCH (:Part {id: 'ev6::Dcache'})-[:MADE_OF]->(m:Material) RETURN m.id AS material")
+    assert made_of and made_of[0]["material"] == "silicon"
 
-        used_in = session.run(
-            "MATCH (:Material {id: 'silicon'})-[:USED_IN]->(r:SimulationRun) RETURN r.id AS run_id"
-        ).single()
-        assert used_in is not None
+    used_in = run_query("MATCH (:Material {id: 'silicon'})-[:USED_IN]->(r:SimulationRun) RETURN r.id AS run_id")
+    assert used_in
 
 
 # A short passage standing in for real retrieved datasheet text -- long

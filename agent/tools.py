@@ -14,7 +14,7 @@ import ollama
 from langfuse import observe
 
 from agent.config import EMBED_MODEL, RETRIEVAL_K
-from agent.graph_db import get_driver
+from agent.graph_db import run_query
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOTSPOT_DIR = REPO_ROOT / "data" / "hotspot_example1"
@@ -44,12 +44,11 @@ def get_unit_material(unit: str, floorplan_id: str = "ev6") -> str | None:
     """Look up what material a floorplan unit is made of via the
     part -> material knowledge graph built by scripts/ingest_graph.py."""
     part_id = f"{floorplan_id}::{unit}"
-    with get_driver().session() as session:
-        record = session.run(
-            "MATCH (:Part {id: $part_id})-[:MADE_OF]->(m:Material) RETURN m.id AS material LIMIT 1",
-            part_id=part_id,
-        ).single()
-    return record["material"] if record else None
+    rows = run_query(
+        "MATCH (:Part {id: $part_id})-[:MADE_OF]->(m:Material) RETURN m.id AS material LIMIT 1",
+        part_id=part_id,
+    )
+    return rows[0]["material"] if rows else None
 
 
 @observe(name="tool.retrieve_context", as_type="retriever")
