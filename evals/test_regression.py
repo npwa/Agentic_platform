@@ -7,9 +7,10 @@ validator pass" check counts as a regression gate -- that's what most of
 these are.
 """
 
+import os
 from pathlib import Path
 
-import networkx as nx
+import pytest
 
 from agent.graph import (
     MAX_RETRIES,
@@ -20,7 +21,14 @@ from agent.graph import (
     validator,
     write_report,
 )
-from agent.tools import GRAPH_PATH, get_peak_power_unit, get_unit_material
+from agent.graph_db import get_driver
+from agent.tools import get_peak_power_unit, get_unit_material
+
+# get_unit_material() and the graph-chain test below query Neo4j live -- skip
+# them (rather than erroring out CI) when no NEO4J_URI is configured.
+requires_neo4j = pytest.mark.skipif(
+    not os.environ.get("NEO4J_URI"), reason="NEO4J_URI not set; skipping tests that need a live Neo4j instance"
+)
 
 
 def test_peak_power_unit_is_dcache():
@@ -30,19 +38,24 @@ def test_peak_power_unit_is_dcache():
     assert peak["n_samples"] == 100
 
 
+@requires_neo4j
 def test_unit_material_lookup():
     assert get_unit_material("Dcache") == "silicon"
     assert get_unit_material("not_a_real_unit") is None
 
 
+@requires_neo4j
 def test_knowledge_graph_has_part_material_run_chain():
-    graph = nx.read_graphml(GRAPH_PATH)
-    assert graph.nodes["ev6::Dcache"]["kind"] == "part"
-    assert any(
-        target == "silicon" and data["relation"] == "made_of"
-        for _, target, data in graph.out_edges("ev6::Dcache", data=True)
-    )
-    assert any(data["relation"] == "used_in" for _, _, data in graph.out_edges("silicon", data=True))
+    with get_driver().session() as session:
+        made_of = session.run(
+            "MATCH (:Part {id: 'ev6::Dcache'})-[:MADE_OF]->(m:Material) RETURN m.id AS material"
+        ).single()
+        assert made_of is not None and made_of["material"] == "silicon"
+
+        used_in = session.run(
+            "MATCH (:Material {id: 'silicon'})-[:USED_IN]->(r:SimulationRun) RETURN r.id AS run_id"
+        ).single()
+        assert used_in is not None
 
 
 # A short passage standing in for real retrieved datasheet text -- long

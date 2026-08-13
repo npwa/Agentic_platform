@@ -9,9 +9,10 @@ The domain is semiconductor packaging and thermal analysis. Public
 data is ingested into a dual semantic layer. PDFs are chunked,
 embedded with a local model, and stored in a persistent Chroma
 collection. Structured relationships (floorplan parts → materials →
-simulation runs) are captured in a lightweight NetworkX knowledge
-graph serialized as GraphML. Deterministic tools query these stores so
-that every fact the agent uses is computed.
+simulation runs) are captured as nodes and relationships in a managed
+Neo4j Aura Free graph database, written via idempotent `MERGE`
+ingestion. Deterministic tools query these stores so that every fact
+the agent uses is computed.
 
 The core runtime is a LangGraph StateGraph whose nodes implement a
 classic planner → executor → validator loop. State is an explicit

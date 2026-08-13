@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build a part -> material -> simulation-run knowledge graph from a HotSpot
-example (floorplan, materials, config, power trace) using networkx.
+example (floorplan, materials, config, power trace) and persist it to
+Neo4j Aura.
 
 Usage:
     python scripts/ingest_graph.py
@@ -9,11 +10,13 @@ Usage:
 
 import argparse
 import re
+import sys
 from pathlib import Path
 
-import networkx as nx
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+from agent.graph_db import get_driver  # noqa: E402
 
 
 def parse_floorplan(path: Path) -> list[dict]:
@@ -104,7 +107,7 @@ def infer_material(name: str, value_key_thermal: str, value_key_cap: str, config
     return name
 
 
-def build_graph(example_dir: Path) -> nx.DiGraph:
+def build_graph(example_dir: Path) -> dict:
     flp_path = next(example_dir.glob("*.flp"))
     materials_path = next(example_dir.glob("*.materials"))
     config_path = example_dir / "example.config"
@@ -125,49 +128,68 @@ def build_graph(example_dir: Path) -> nx.DiGraph:
     run_id = f"{floorplan_id}_run"
     ptrace_id = ptrace_path.name
 
-    graph = nx.DiGraph()
-    graph.add_node(floorplan_id, kind="floorplan", source_file=flp_path.name, n_units=len(units))
-    graph.add_node(run_id, kind="simulation_run", config_file=config_path.name, package_config_file="package.config")
-    graph.add_node(ptrace_id, kind="power_trace", n_samples=n_samples, n_units=len(ptrace_units))
+    # Nodes as (label, id, properties); edges as (from_label, from_id, rel_type, to_label, to_id).
+    nodes = [
+        ("Floorplan", floorplan_id, {"kind": "floorplan", "source_file": flp_path.name, "n_units": len(units)}),
+        (
+            "SimulationRun",
+            run_id,
+            {"kind": "simulation_run", "config_file": config_path.name, "package_config_file": "package.config"},
+        ),
+        ("PowerTrace", ptrace_id, {"kind": "power_trace", "n_samples": n_samples, "n_units": len(ptrace_units)}),
+    ]
+    edges = [
+        ("Floorplan", floorplan_id, "USED_IN", "SimulationRun", run_id),
+        ("PowerTrace", ptrace_id, "INPUT_TO", "SimulationRun", run_id),
+        ("Material", chip_material, "USED_IN", "SimulationRun", run_id),
+        ("Material", sink_material, "USED_IN", "SimulationRun", run_id),
+    ]
 
     for material in materials:
         attrs = {k: v for k, v in material.items() if k != "name"}
-        graph.add_node(material["name"], kind="material", **attrs)
-
-    graph.add_edge(floorplan_id, run_id, relation="used_in")
-    graph.add_edge(ptrace_id, run_id, relation="input_to")
-    graph.add_edge(chip_material, run_id, relation="used_in")
-    graph.add_edge(sink_material, run_id, relation="used_in")
+        nodes.append(("Material", material["name"], {"kind": "material", **attrs}))
 
     for unit in units:
         part_id = f"{floorplan_id}::{unit['name']}"
         attrs = {k: v for k, v in unit.items() if k != "name"}
         attrs["area"] = unit["width"] * unit["height"]
-        graph.add_node(part_id, kind="part", label=unit["name"], **attrs)
-        graph.add_edge(part_id, floorplan_id, relation="part_of")
-        graph.add_edge(part_id, chip_material, relation="made_of")
+        nodes.append(("Part", part_id, {"kind": "part", "label": unit["name"], **attrs}))
+        edges.append(("Part", part_id, "PART_OF", "Floorplan", floorplan_id))
+        edges.append(("Part", part_id, "MADE_OF", "Material", chip_material))
 
-    return graph
+    return {"nodes": nodes, "edges": edges}
+
+
+def write_to_neo4j(elements: dict) -> None:
+    driver = get_driver()
+    with driver.session() as session:
+        for label, node_id, props in elements["nodes"]:
+            session.run(f"MERGE (n:{label} {{id: $id}}) SET n += $props", id=node_id, props=props)
+        for from_label, from_id, rel_type, to_label, to_id in elements["edges"]:
+            session.run(
+                f"""
+                MATCH (a:{from_label} {{id: $from_id}})
+                MATCH (b:{to_label} {{id: $to_id}})
+                MERGE (a)-[:{rel_type}]->(b)
+                """,
+                from_id=from_id,
+                to_id=to_id,
+            )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--example-dir", type=Path, default=REPO_ROOT / "data" / "hotspot_example1")
-    parser.add_argument("--out-dir", type=Path, default=REPO_ROOT / "graph")
-    parser.add_argument("--out-name", default="knowledge_graph.graphml")
     args = parser.parse_args()
 
-    graph = build_graph(args.example_dir)
+    elements = build_graph(args.example_dir)
+    write_to_neo4j(elements)
 
-    args.out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = args.out_dir / args.out_name
-    nx.write_graphml(graph, out_path)
-
-    n_parts = sum(1 for _, attrs in graph.nodes(data=True) if attrs.get("kind") == "part")
-    n_materials = sum(1 for _, attrs in graph.nodes(data=True) if attrs.get("kind") == "material")
-    print(f"Graph: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
+    n_parts = sum(1 for _, _, props in elements["nodes"] if props.get("kind") == "part")
+    n_materials = sum(1 for _, _, props in elements["nodes"] if props.get("kind") == "material")
+    print(f"Graph: {len(elements['nodes'])} nodes, {len(elements['edges'])} edges")
     print(f"  parts={n_parts} materials={n_materials}")
-    print(f"Saved to {out_path}")
+    print("Written to Neo4j")
 
 
 if __name__ == "__main__":

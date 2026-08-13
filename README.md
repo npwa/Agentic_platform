@@ -43,8 +43,12 @@ flowchart TD
 2. **Semantic layer** — `scripts/ingest_pdfs.py` chunks the PDFs (`pdfplumber`), embeds
    each chunk with `nomic-embed-text` via Ollama, and upserts into a persistent Chroma
    collection (`chroma_db/`, gitignored — regenerate locally). `scripts/ingest_graph.py`
-   parses the HotSpot floorplan/materials/config/power-trace files into a `networkx`
-   part → material → simulation-run graph, committed as `graph/knowledge_graph.graphml`.
+   parses the HotSpot floorplan/materials/config/power-trace files into a part → material
+   → simulation-run graph and writes it to a **Neo4j Aura Free** instance via `MERGE`
+   (idempotent full rebuild on every run, no local graph file). `agent/graph_db.py` holds
+   the one shared driver, credentialed from `.env`'s `NEO4J_URI`/`NEO4J_USER`/
+   `NEO4J_PASSWORD` — the Aura instance itself isn't provisioned by anything in this repo;
+   see Setup below.
 
 3. **Agent graph** — A LangGraph `StateGraph` (`agent/graph.py`) running
    `qwen2.5:7b-instruct-q4_K_M` through Ollama's OpenAI-compatible endpoint, with
@@ -100,9 +104,14 @@ cd langfuse && docker compose up -d && cd ..
 # the stack auto-provisions a project from langfuse/.env's LANGFUSE_INIT_* values;
 # make sure the PUBLIC/SECRET key pair in the root .env matches that project
 
+# Neo4j Aura Free must already exist before ingestion/the agent can run --
+# unlike Langfuse this isn't self-hosted by anything here. Create a free
+# instance at https://console.neo4j.io, then put its connection details in
+# the root .env as NEO4J_URI (neo4j+s://...), NEO4J_USER, NEO4J_PASSWORD.
+
 # get the licensed PDFs per data/download_note.md, then:
 python scripts/ingest_pdfs.py
-python scripts/ingest_graph.py
+python scripts/ingest_graph.py  # populates the Neo4j Aura instance above
 
 # run the agent graph end to end (traces to Langfuse at http://localhost:3000)
 python -m agent.run
